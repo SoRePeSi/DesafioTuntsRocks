@@ -28,8 +28,6 @@ public class Program{
 	static async Task Main(){
 		await FetchInfo();
 
-		//await MakeExcel();
-
 		string filePath = @"C:\resultFolder";
 		Console.WriteLine(filePath);
 
