@@ -30,16 +30,16 @@ public class Program{
 
 		//await MakeExcel();
 
-		string filePath = Directory.GetParent(Environment.CurrentDirectory).Parent.Parent.FullName;
+		string filePath = @"C:\resultFolder";
+		Console.WriteLine(filePath);
 
 		FileInfo newFile = new FileInfo(filePath + @"\countriesList.xlsx");
 		if (newFile.Exists){
-			newFile.Delete();  // ensures we create a new workbook
+			newFile.Delete(); 
 			newFile = new FileInfo(filePath + @"\countriesList.xlsx");
 		}
 
 		using (ExcelPackage package = new ExcelPackage(newFile)){
-			// add a new worksheet to the empty workbook
 			ExcelWorksheet workSheet = package.Workbook.Worksheets.Add("Countries");
 
 		// CREATE TITLE
@@ -70,10 +70,13 @@ public class Program{
 			
 		// SAVE
 			package.Workbook.Properties.Title = "CountriesList";
+			if (!Directory.Exists(@"C:\resultFolder")){
+				Directory.CreateDirectory(@"C:\resultFolder");
+			}
 			package.Save();
 
 		// OPEN FILE EXPLORER
-			System.Diagnostics.Process.Start("explorer.exe", @"/select, """ + filePath + @"\countriesList.xlsx""");
+			System.Diagnostics.Process.Start("explorer.exe", "/select, \"" + filePath + @"\countriesList.xlsx""");
 		}
 	}
 
