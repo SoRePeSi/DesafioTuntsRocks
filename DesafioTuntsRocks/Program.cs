@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-
-using Excel = Microsoft.Office.Interop.Excel;
 using Newtonsoft.Json;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
 
 public class Countries {
 	public Name name { get; set; }
@@ -28,7 +28,53 @@ public class Program{
 	static async Task Main(){
 		await FetchInfo();
 
-		await MakeExcel();
+		//await MakeExcel();
+
+		string filePath = Directory.GetParent(Environment.CurrentDirectory).Parent.Parent.FullName;
+
+		FileInfo newFile = new FileInfo(filePath + @"\countriesList.xlsx");
+		if (newFile.Exists){
+			newFile.Delete();  // ensures we create a new workbook
+			newFile = new FileInfo(filePath + @"\countriesList.xlsx");
+		}
+
+		using (ExcelPackage package = new ExcelPackage(newFile)){
+			// add a new worksheet to the empty workbook
+			ExcelWorksheet workSheet = package.Workbook.Worksheets.Add("Countries");
+
+		// CREATE TITLE
+			workSheet.Cells[1,1,1,4].Merge = true;
+
+			workSheet.Cells[1, 1].Value = "Countries List";
+
+		// CREATE HEADER
+			workSheet.Cells[2,1].Value = "Name";
+			workSheet.Cells[2,2].Value = "Capital";
+			workSheet.Cells[2,3].Value = "Area";
+			workSheet.Cells[2,4].Value = "Currencies";
+		
+		// SET TITLE AND HEADER STYLE
+			workSheet.Cells[1, 1].Style.Font.Size = 16;
+			workSheet.Cells[1, 1].Style.Font.Color.SetColor(System.Drawing.ColorTranslator.FromHtml("#4F4F4F"));
+			workSheet.Cells[1, 1, 2, 4].Style.Font.Bold = true;
+			workSheet.Cells[1, 1, 2, 4].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+			workSheet.Cells[2, 1, 2, 4].Style.Font.Size = 12;
+			workSheet.Cells[2, 1, 2, 4].Style.Font.Color.SetColor(System.Drawing.ColorTranslator.FromHtml("#808080"));
+
+		// WRITE COUNTRIES' INFORMATION
+			await FillSheet(workSheet);
+			workSheet.Column(1).AutoFit();
+			workSheet.Column(2).AutoFit();
+			workSheet.Column(3).AutoFit();
+			workSheet.Column(4).AutoFit();
+			
+		// SAVE
+			package.Workbook.Properties.Title = "CountriesList";
+			package.Save();
+
+		// OPEN FILE EXPLORER
+			System.Diagnostics.Process.Start("explorer.exe", @"/select, """ + filePath + @"\countriesList.xlsx""");
+		}
 	}
 
 	static async Task FetchInfo() {
@@ -66,45 +112,8 @@ public class Program{
 		}
 	}
 
-	// CREATE EXCEL SHEET
-	static async Task MakeExcel() {
-		var excelApp = new Excel.Application();
-		excelApp.Visible = true;
-
-		excelApp.Workbooks.Add();
-		Excel._Worksheet workSheet = (Excel.Worksheet)excelApp.ActiveSheet;
-
-	// CREATE TITLE
-		workSheet.Range[workSheet.Cells[1,1], workSheet.Cells[1,4]].Merge();
-
-		workSheet.Cells[1, "A"] = "Countries List";
-
-	// CREATE HEADER
-		workSheet.Cells[2,"A"] = "Name";
-		workSheet.Cells[2,"B"] = "Capital";
-		workSheet.Cells[2,"C"] = "Area";
-		workSheet.Cells[2,"D"] = "Currencies";
-		
-	// SET TITLE AND HEADER STYLE
-		workSheet.Cells[1, "A"].Font.Size = 16;
-		workSheet.Cells[1, "A"].Font.Color = 0x4F4F4F;
-		workSheet.Range[workSheet.Cells[1, "A"],workSheet.Cells[2,"D"]].Font.Bold = true;
-		workSheet.Range[workSheet.Cells[1, "A"],workSheet.Cells[2,"D"]].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
-		workSheet.Range[workSheet.Cells[2, "A"],workSheet.Cells[2,"D"]].Font.Size = 12;
-		workSheet.Range[workSheet.Cells[2, "A"],workSheet.Cells[2,"D"]].Font.Color = 0x808080;
-
 	// FILL SHEET
-		await FillExcel(workSheet);
-	
-	// FIT WORDS IN COLUMNS
-		((Excel.Range)workSheet.Columns[1]).AutoFit();
-		((Excel.Range)workSheet.Columns[2]).AutoFit();
-		((Excel.Range)workSheet.Columns[3]).AutoFit();
-		((Excel.Range)workSheet.Columns[4]).AutoFit();
-	}
-
-	// FILL EXCEL SHEET
-	static async Task FillExcel(Excel._Worksheet ws) {
+	static async Task FillSheet(ExcelWorksheet ws) {
 		int row = 3;
 		foreach(Countries pais in listOfCountries) {
 			string nameToWrite, capitalToWrite, currenciesToWrite;
@@ -148,16 +157,16 @@ public class Program{
 			}
 
 		// WRITE INFORMATION LINES
-			ws.Cells[row,"A"] = nameToWrite;
-			ws.Cells[row,"B"] = capitalToWrite;
+			ws.Cells[row,1].Value = nameToWrite;
+			ws.Cells[row,2].Value = capitalToWrite;
 			if(areaToWrite == null) {
-				ws.Cells[row,"C"] = "-";
+				ws.Cells[row,3].Value = "-";
 			}
 			else{
-				ws.Cells[row,"C"] = areaToWrite;
-				ws.Cells[row,"C"].NumberFormat = "0.00";
+				ws.Cells[row,3].Value = areaToWrite;
+				ws.Cells[row,3].Style.Numberformat.Format = "0.00";
 			}
-			ws.Cells[row,"D"] = currenciesToWrite;
+			ws.Cells[row,4].Value = currenciesToWrite;
 
 			row++;
 		}
